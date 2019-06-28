@@ -13,22 +13,31 @@ import {
   create as svgCreate
 } from 'tiny-svg';
 
+import { BearUrl, CoffeeUrl, JuiceUrl } from '../images';
+
+const DRINKS = {
+  bear: BearUrl,
+  coffee: CoffeeUrl,
+  juice: JuiceUrl
+};
 
 /**
  * A renderer that knows how to render custom elements.
  */
-export default function CustomRenderer(eventBus, styles) {
+export default function CustomRenderer (eventBus, styles, bpmnRenderer) {
 
   BaseRenderer.call(this, eventBus, 2000);
 
+  this.bpmnRenderer = bpmnRenderer;
+
   var computeStyle = styles.computeStyle;
 
-  this.drawTriangle = function(p, side) {
+  this.drawTriangle = function (p, side) {
     var halfSide = side / 2,
-        points,
-        attrs;
+      points,
+      attrs;
 
-    points = [ halfSide, 0, side, side, 0, side ];
+    points = [halfSide, 0, side, side, 0, side];
 
     attrs = computeStyle(attrs, {
       stroke: '#3CAA82',
@@ -49,26 +58,26 @@ export default function CustomRenderer(eventBus, styles) {
     return polygon;
   };
 
-  this.getTrianglePath = function(element) {
+  this.getTrianglePath = function (element) {
     var x = element.x,
-        y = element.y,
-        width = element.width,
-        height = element.height;
+      y = element.y,
+      width = element.width,
+      height = element.height;
 
     var trianglePath = [
       ['M', x + width / 2, y],
       ['l', width / 2, height],
-      ['l', -width, 0 ],
+      ['l', -width, 0],
       ['z']
     ];
 
     return componentsToPath(trianglePath);
   };
 
-  this.drawCircle = function(p, width, height) {
+  this.drawCircle = function (p, width, height) {
     var cx = width / 2,
-        cy = height / 2;
-// eslint-disable-next-line
+      cy = height / 2;
+    // eslint-disable-next-line
     var attrs = computeStyle(attrs, {
       stroke: '#4488aa',
       strokeWidth: 4,
@@ -90,10 +99,10 @@ export default function CustomRenderer(eventBus, styles) {
     return circle;
   };
 
-  this.getCirclePath = function(shape) {
+  this.getCirclePath = function (shape) {
     var cx = shape.x + shape.width / 2,
-        cy = shape.y + shape.height / 2,
-        radius = shape.width / 2;
+      cy = shape.y + shape.height / 2,
+      radius = shape.width / 2;
 
     var circlePath = [
       ['M', cx, cy],
@@ -106,7 +115,7 @@ export default function CustomRenderer(eventBus, styles) {
     return componentsToPath(circlePath);
   };
 
-  this.drawCustomConnection = function(p, element) {
+  this.drawCustomConnection = function (p, element) {
     // eslint-disable-next-line
     var attrs = computeStyle(attrs, {
       stroke: '#ff471a',
@@ -116,8 +125,8 @@ export default function CustomRenderer(eventBus, styles) {
     return svgAppend(p, createLine(element.waypoints, attrs));
   };
 
-  this.getCustomConnectionPath = function(connection) {
-    var waypoints = connection.waypoints.map(function(p) {
+  this.getCustomConnectionPath = function (connection) {
+    var waypoints = connection.waypoints.map(function (p) {
       return p.original || p;
     });
 
@@ -125,7 +134,7 @@ export default function CustomRenderer(eventBus, styles) {
       ['M', waypoints[0].x, waypoints[0].y]
     ];
 
-    waypoints.forEach(function(waypoint, index) {
+    waypoints.forEach(function (waypoint, index) {
       if (index !== 0) {
         connectionPath.push(['L', waypoint.x, waypoint.y]);
       }
@@ -137,28 +146,42 @@ export default function CustomRenderer(eventBus, styles) {
 
 inherits(CustomRenderer, BaseRenderer);
 
-CustomRenderer.$inject = [ 'eventBus', 'styles' ];
+CustomRenderer.$inject = ['eventBus', 'styles', 'bpmnRenderer'];
 
 
-CustomRenderer.prototype.canRender = function(element) {
-  return /^custom:/.test(element.type);
+CustomRenderer.prototype.canRender = function (element) {
+  // ignore labels
+  return !element.labelTarget;
+  // return /^custom:/.test(element.type);
 };
 
-CustomRenderer.prototype.drawShape = function(p, element) {
-  var type = element.type;
+CustomRenderer.prototype.drawShape = function (parentNode, element) {
+  const { drink, type } = element
 
+  if (drink) {
+    const shape = svgCreate('image', {
+      x: 0,
+      y: 0,
+      width: element.width,
+      height: element.height,
+      href: DRINKS[drink]
+    });
+    svgAppend(parentNode, shape);
+    return shape
+  }
   if (type === 'custom:triangle') {
-    return this.drawTriangle(p, element.width);
+    return this.drawTriangle(parentNode, element.width);
   }
 
   if (type === 'custom:circle') {
-    return this.drawCircle(p, element.width, element.height);
+    return this.drawCircle(parentNode, element.width, element.height);
   }
+
+  // return this.bpmnRenderer.drawShape(parentNode, element)
 };
 
-CustomRenderer.prototype.getShapePath = function(shape) {
+CustomRenderer.prototype.getShapePath = function (shape) {
   var type = shape.type;
-
   if (type === 'custom:triangle') {
     return this.getTrianglePath(shape);
   }
@@ -168,7 +191,7 @@ CustomRenderer.prototype.getShapePath = function(shape) {
   }
 };
 
-CustomRenderer.prototype.drawConnection = function(p, element) {
+CustomRenderer.prototype.drawConnection = function (p, element) {
 
   var type = element.type;
 
@@ -178,7 +201,7 @@ CustomRenderer.prototype.drawConnection = function(p, element) {
 };
 
 
-CustomRenderer.prototype.getConnectionPath = function(connection) {
+CustomRenderer.prototype.getConnectionPath = function (connection) {
 
   var type = connection.type;
 

@@ -98,6 +98,7 @@ CustomRules.prototype.init = function() {
   });
 
   this.addRule('shape.create', HIGH_PRIORITY, function(context) {
+    // console.log('shape.create', context)
     var target = context.target,
         shape = context.shape;
 
@@ -105,6 +106,7 @@ CustomRules.prototype.init = function() {
   });
 
   this.addRule('shape.resize', HIGH_PRIORITY, function(context) {
+    // console.log('shape.resize', context)
     var shape = context.shape;
 
     if (isCustom(shape)) {

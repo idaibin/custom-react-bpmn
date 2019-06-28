@@ -2,42 +2,54 @@ import {
   assign
 } from 'min-dash';
 
+import { BearUrl, CoffeeUrl, JuiceUrl } from '../images';
+
+const SUITABILITY_SCORE_HIGH = 100,
+  SUITABILITY_SCORE_AVERGE = 50,
+  SUITABILITY_SCORE_LOW = 25;
 
 /**
  * A palette that allows you to create BPMN _and_ custom elements.
  */
-export default function PaletteProvider(palette, create, elementFactory, spaceTool, lassoTool) {
+export default function PaletteProvider (bpmnFactory, palette, create, elementFactory, spaceTool, lassoTool, translate) {
 
-  this._create = create;
   this._elementFactory = elementFactory;
   this._spaceTool = spaceTool;
   this._lassoTool = lassoTool;
+  this.bpmnFactory = bpmnFactory;
+  this.create = create;
+  this.elementFactory = elementFactory;
+  this.translate = translate;
 
   palette.registerProvider(this);
 }
 
 PaletteProvider.$inject = [
+  'bpmnFactory',
   'palette',
   'create',
   'elementFactory',
   'spaceTool',
-  'lassoTool'
+  'lassoTool',
+  'translate'
 ];
 
 
-PaletteProvider.prototype.getPaletteEntries = function(element) {
+PaletteProvider.prototype.getPaletteEntries = function (element) {
+  const {
+    bpmnFactory,
+    create,
+    elementFactory,
+    translate
+  } = this;
+  const actions = {},
+    spaceTool = this._spaceTool,
+    lassoTool = this._lassoTool;
 
-  var actions  = {},
-      create = this._create,
-      elementFactory = this._elementFactory,
-      spaceTool = this._spaceTool,
-      lassoTool = this._lassoTool;
+  function createAction (type, group, className, title, options) {
 
-
-  function createAction(type, group, className, title, options) {
-
-    function createListener(event) {
-      var shape = elementFactory.createShape(assign({ type: type }, options));
+    function createListener (event) {
+      const shape = elementFactory.createShape(assign({ type: type }, options));
 
       if (options) {
         shape.businessObject.di.isExpanded = options.isExpanded;
@@ -59,8 +71,26 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     };
   }
 
-  function createParticipant(event, collapsed) {
+  function createParticipant (event, collapsed) {
     create.start(event, elementFactory.createParticipantShape(collapsed));
+  }
+
+  function createTask (suitabilityScore, drink) {
+    return function (event) {
+      const businessObject = bpmnFactory.create('bpmn:Task');
+
+      businessObject.suitable = suitabilityScore;
+      businessObject.test = 'testtest';
+
+      const shape = elementFactory.createShape({
+        topic: true,
+        drink,
+        businessObject,
+        type: 'bpmn:Task',
+      });
+
+      create.start(event, shape);
+    }
   }
 
   assign(actions, {
@@ -79,7 +109,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
       className: 'bpmn-icon-lasso-tool',
       title: 'Activate the lasso tool',
       action: {
-        click: function(event) {
+        click: function (event) {
           lassoTool.activateSelection(event);
         }
       }
@@ -89,7 +119,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
       className: 'bpmn-icon-space-tool',
       title: 'Activate the create/remove space tool',
       action: {
-        click: function(event) {
+        click: function (event) {
           spaceTool.activateSelection(event);
         }
       }
@@ -124,6 +154,36 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
       action: {
         dragstart: createParticipant,
         click: createParticipant
+      }
+    },
+    'create.low-task': {
+      group: 'activity',
+      // className: 'bpmn-icon-task red',
+      title: translate('Create Task with low suitability score'),
+      imageUrl: BearUrl,
+      action: {
+        dragstart: createTask(SUITABILITY_SCORE_LOW, 'bear'),
+        click: createTask(SUITABILITY_SCORE_LOW, 'bear')
+      }
+    },
+    'create.average-task': {
+      group: 'activity',
+      // className: 'bpmn-icon-task yellow',
+      title: translate('Create Task with average suitability score'),
+      imageUrl: CoffeeUrl,
+      action: {
+        dragstart: createTask(SUITABILITY_SCORE_AVERGE, 'coffee'),
+        click: createTask(SUITABILITY_SCORE_AVERGE, 'coffee')
+      }
+    },
+    'create.high-task': {
+      group: 'activity',
+      // className: 'bpmn-icon-task green',
+      title: translate('Create Task with high suitability score'),
+      imageUrl: JuiceUrl,
+      action: {
+        dragstart: createTask(SUITABILITY_SCORE_HIGH, 'juice'),
+        click: createTask(SUITABILITY_SCORE_HIGH, 'juice')
       }
     }
   });

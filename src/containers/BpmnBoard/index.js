@@ -7,7 +7,7 @@ import propertiesProviderModule from "./provider/magic";
 import magicModdleDescriptor from "./descriptors/magic";
 
 import customTranslate from './customTranslate';
-import customModule from './custom';
+// import customModule from './custom';
 
 import PropertiesPanel from './properties-panel';
 
@@ -15,6 +15,9 @@ import ZoomControls from "./components/ZoomControls";
 import FileControls from "./components/FileControls";
 import EditingTools from './components/EditingTools';
 
+import "bpmn-js/dist/assets/diagram-js.css";
+import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
+import "bpmn-js-properties-panel/dist/assets/bpmn-js-properties-panel.css";
 import "./style/app.less";
 
 import xmlStr from "../../assets/bpmn/xmlStr";
@@ -30,7 +33,7 @@ export default class extends Component {
 
     this.bpmnModeler = new BpmnModeler({
       additionalModules: [
-        customModule,
+        // customModule,
         propertiesPanelModule,
         propertiesProviderModule,
         customTranslate,
@@ -46,6 +49,9 @@ export default class extends Component {
         bindTo: document.body
       }
     });
+    // this.setState({
+    //   customModeler: this.bpmnModeler
+    // })
 
     // this.bpmnModeler.on('commandStack.changed', this.onChange);
 
@@ -66,11 +72,6 @@ export default class extends Component {
   // }
 
   renderDiagram = (xml) => {
-    this.setState({
-      customModeler: this.bpmnModeler
-    }, () => {
-      console.log(this.state)
-    })
     this.bpmnModeler.importXML(xml, err => {
       if (err) {
         // import failed :-(
